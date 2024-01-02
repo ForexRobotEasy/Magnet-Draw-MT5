@@ -1,0 +1,168 @@
+
+//+------------------------------------------------------------------+
+//|                                              Magnet Draw MT5.mq5 |
+//|                        Copyright 2021, Forex Robot Easy Team     |
+//|                                             forexroboteasy.com   |
+//+------------------------------------------------------------------+
+
+// Include necessary libraries and define global variables
+#include <Trade\Trade.mqh>
+#include <ChartObjects\ChartObjectsLines.mqh>
+#include <ChartObjects\ChartObjectsFibo.mqh>
+#include <ChartObjects\ChartObjectsRectangles.mqh>
+
+CTrade trade; // Trade object for trading functions
+
+//+------------------------------------------------------------------+
+//| Custom drawing tools                                              |
+//+------------------------------------------------------------------+
+
+// Vertical Line
+void DrawVerticalLine(double price)
+{
+   CChartObjectLine verticalLine;
+   verticalLine.Create(0, 0, TimeCurrent(), price, TimeCurrent(), price);
+   verticalLine.Color(Red);
+   verticalLine.Width(2);
+   verticalLine.Ray(false);
+}
+
+// Horizontal Line
+void DrawHorizontalLine(double price)
+{
+   CChartObjectLine horizontalLine;
+   horizontalLine.Create(0, 0, TimeCurrent(), price, TimeCurrent(), price);
+   horizontalLine.Color(Blue);
+   horizontalLine.Width(2);
+   horizontalLine.Ray(false);
+}
+
+// Trend Line
+void DrawTrendLine(double startPrice, double endPrice)
+{
+   CChartObjectTrendLine trendLine;
+   trendLine.Create(0, 0, TimeCurrent(), startPrice, TimeCurrent(), endPrice);
+   trendLine.Color(Green);
+   trendLine.Width(2);
+   trendLine.Ray(false);
+}
+
+// Horizontal Ray (Angle Trend Line)
+void DrawHorizontalRay(double startPrice)
+{
+   CChartObjectTrendLine horizontalRay;
+   horizontalRay.Create(0, 0, TimeCurrent(), startPrice, TimeCurrent(), 0);
+   horizontalRay.Color(Yellow);
+   horizontalRay.Width(2);
+   horizontalRay.Ray(true);
+}
+
+// Fibonacci Retracement
+void DrawFibonacciRetracement(double startPrice, double endPrice)
+{
+   CChartObjectFibo fibonacciRetracement;
+   fibonacciRetracement.Create(0, 0, TimeCurrent(), startPrice, TimeCurrent(), endPrice);
+   fibonacciRetracement.Color(Magenta);
+   fibonacciRetracement.Width(2);
+}
+
+// Rectangle
+void DrawRectangle(double startX, double startY, double endX, double endY)
+{
+   CChartObjectRectangle rectangle;
+   rectangle.Create(0, 0, TimeCurrent(), startX, startY, TimeCurrent(), endX, endY);
+   rectangle.Color(Orange);
+   rectangle.Width(2);
+}
+
+//+------------------------------------------------------------------+
+//| Magnet Snap functionality                                         |
+//+------------------------------------------------------------------+
+
+double GetNearestPrice(double y)
+{
+   double nearestPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double minDistance = MathAbs(y - ChartPriceOnY(y));
+
+   for (int i = 0; i < Bars; i++)
+   {
+      double price = iOpen(_Symbol, 0, i);
+      double distance = MathAbs(y - ChartPriceOnY(price));
+
+      if (distance < minDistance)
+      {
+         minDistance = distance;
+         nearestPrice = price;
+      }
+   }
+
+   return nearestPrice;
+}
+
+//+------------------------------------------------------------------+
+//| Customization options                                             |
+//+------------------------------------------------------------------+
+
+// Customization options for drawing tools
+color verticalLineColor = Red;
+color horizontalLineColor = Blue;
+color trendLineColor = Green;
+color horizontalRayColor = Yellow;
+color fibonacciRetracementColor = Magenta;
+color rectangleColor = Orange;
+
+// Customization options for drawing tool thickness
+int verticalLineThickness = 2;
+int horizontalLineThickness = 2;
+int trendLineThickness = 2;
+int horizontalRayThickness = 2;
+int fibonacciRetracementThickness = 2;
+int rectangleThickness = 2;
+
+//+------------------------------------------------------------------+
+//| Main program                                                     |
+//+------------------------------------------------------------------+
+
+void OnStart()
+{
+   // Enable crosshair
+   ChartSetInteger(0, CHART_SHOW_CROSSHAIR, true);
+
+   // Magnet Snap threshold in pixel units
+   int threshold = 10;
+
+   // Loop until the program is stopped
+   while (!IsStopped())
+   {
+      // Get the position of the crosshair
+      int x, y;
+      ChartGetInteger(0, CHART_MOUSE_X, 0, x);
+      ChartGetInteger(0, CHART_MOUSE_Y, 0, y);
+
+      // Snap the crosshair to the nearest price if within the threshold
+      double nearestPrice = GetNearestPrice(y);
+      double distance = MathAbs(y - ChartPriceOnY(nearestPrice));
+
+      if (distance <= threshold)
+         y = ChartYOnPrice(nearestPrice);
+
+      // Draw the custom drawing tools based on user inputs
+      if (IsKeyPressed(KEY_V))
+         DrawVerticalLine(nearestPrice);
+      else if (IsKeyPressed(KEY_H))
+         DrawHorizontalLine(nearestPrice);
+      else if (IsKeyPressed(KEY_T))
+         DrawTrendLine(nearestPrice, nearestPrice + 100);
+      else if (IsKeyPressed(KEY_R))
+         DrawHorizontalRay(nearestPrice);
+      else if (IsKeyPressed(KEY_F))
+         DrawFibonacciRetracement(nearestPrice, nearestPrice + 100);
+      else if (IsKeyPressed(KEY_E))
+         DrawRectangle(x, y, x + 100, y + 100);
+
+      // Sleep for a short period to reduce CPU usage
+      Sleep(10);
+   }
+}
+
+//+------------------------------------------------------------------+
